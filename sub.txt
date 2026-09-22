@@ -1,1 +1,2 @@
-vless://3ae9c81a-07a8-4734-82dd-a1ae3ee662c4@bore.pub:7903?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=8tJlq3S7Z-4qtVEYhVLqldhGTz32_jpQ5DJemgmTRUk&sid=21d5a55dda454c77&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Bore
+vless://31736924-710c-4203-8870-def5510e2381@bore.pub:3315?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=CmT-sp3oUIonFHd7zdYeDGXdOAVEqPDAPNLMVEtd-gQ&sid=1b3e1a4655ecbf18&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Bore
+wireguard://yKm8r4x16omNi9ff1zkEvkcRZg+rm0w8hHdsiSjpeFc@engage.cloudflareclient.com:2408?publicKey=bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo&address=172.16.0.2/32#Cloudflare-WARP

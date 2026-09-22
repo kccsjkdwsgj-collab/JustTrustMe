@@ -10,10 +10,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 1. تنزيل Xray
+      # 1. تنزيل Xray (تم إضافة sudo)
       - name: Install Xray
         run: |
-          bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+          sudo bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
       # 2. توليد المفاتيح و UUID تلقائياً
       - name: Generate Keys and UUID
@@ -25,7 +25,6 @@ jobs:
           PUBLIC_KEY=$(echo "$KEYS" | grep "Public key:" | awk '{print $3}')
           SHORT_ID=$(openssl rand -hex 8)
           
-          # حفظ القيم في متغيرات البيئة عشان نستخدمها في الخطوات اللي بعدها
           echo "UUID=$UUID" >> $GITHUB_ENV
           echo "PRIVATE_KEY=$PRIVATE_KEY" >> $GITHUB_ENV
           echo "PUBLIC_KEY=$PUBLIC_KEY" >> $GITHUB_ENV
@@ -40,10 +39,10 @@ jobs:
           echo "Flow: xtls-rprx-vision"
           echo "=================================================="
 
-      # 3. وضع إعدادات Xray (VLESS Reality على بورت 10000)
+      # 3. وضع إعدادات Xray (استخدمنا sudo tee عشان الصلاحيات)
       - name: Setup Xray Config
         run: |
-          cat > /usr/local/etc/xray/config.json << EOF
+          sudo tee /usr/local/etc/xray/config.json > /dev/null << EOF
           {
             "inbounds": [{
               "port": 10000,
@@ -69,26 +68,23 @@ jobs:
           }
           EOF
 
-      # 4. تشغيل Xray في الخلفية
+      # 4. تشغيل Xray في الخلفية (تم إضافة sudo)
       - name: Start Xray
         run: |
-          nohup xray run -c /usr/local/etc/xray/config.json > /dev/null 2>&1 &
+          sudo nohup xray run -c /usr/local/etc/xray/config.json > /dev/null 2>&1 &
           sleep 3
 
       # 5. تشغيل Serveo Tunnel واستخراج العنوان
       - name: Start Serveo Tunnel
         run: |
-          # تشغيل Serveo في الخلفية وربطه ببورت 10000
           ssh -o StrictHostKeyChecking=no -R 0:localhost:10000 serveo.net > serveo.log 2>&1 &
           
-          # الانتظار شوية عشان Serveo ياخد بورت ويعطينا العنوان
           echo "⏳ جاري انتظار Serveo عشان يدينا عنوان..."
           sleep 10
           
           echo "=================================================="
           echo "📋 عنوان السيرفر بتاعك (Serveo Address):"
           echo "=================================================="
-          # طباعة الـ Logs عشان تشوف العنوان والبورت
           cat serveo.log
           echo "=================================================="
           echo "⚠️ خد العنوان والبورت اللي فوق وحطهم في Netmod"

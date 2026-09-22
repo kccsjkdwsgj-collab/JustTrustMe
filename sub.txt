@@ -1,0 +1,1 @@
+vless://bade941e-531a-4665-af6d-743090c32522@bore.pub:3575?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=3p3c6TTJEU4s5EYKSDfyxHSBVrOT3p2L8RK7sItU9GU&sid=ef18f6206e8ea957&flow=xtls-rprx-vision#GitHub-Action-Bore

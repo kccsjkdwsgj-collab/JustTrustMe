@@ -41,8 +41,9 @@ jobs:
           ./wgcf register --accept-tos
           ./wgcf generate
 
+          # التعديل هنا: بناخد أول سطر بس (IPv4) باستخدام head -n 1
           WG_PRIVATE_KEY=$(grep "PrivateKey" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
-          WG_ADDRESS=$(grep "Address" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ' | cut -d ',' -f1)
+          WG_ADDRESS=$(grep "Address" wgcf-profile.conf | head -n 1 | cut -d '=' -f2 | tr -d ' ')
           WG_PUBLIC_KEY=$(grep "PublicKey" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
           WG_ENDPOINT=$(grep "Endpoint" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
 

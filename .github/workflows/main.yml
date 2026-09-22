@@ -78,8 +78,16 @@ jobs:
           wget -q https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64 -O playit
           chmod +x playit
           
-          echo "Starting Playit with secret..."
-          nohup ./playit --secret ${{ secrets.PLAYIT_SECRET }} > playit.log 2>&1 &
+          if [ -z "${{ secrets.PLAYIT_SECRET }}" ]; then
+            echo "ERROR: PLAYIT_SECRET is empty! Please add it to GitHub Secrets."
+            exit 1
+          fi
+          
+          mkdir -p ~/.config/playit_gg
+          echo 'secret_key = "${{ secrets.PLAYIT_SECRET }}"' > ~/.config/playit_gg/playit.toml
+          
+          echo "Starting Playit with config file..."
+          nohup ./playit > playit.log 2>&1 &
           
           sleep 5
           echo "=== Playit Logs ==="

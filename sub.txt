@@ -1,1 +1,1 @@
-vless://18bf62fd-e72b-4811-8764-d53138015e67@laurel-city.tun.ply.gg:39442?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=DNdljQ4BZAnHlbbi1_lTwAOH6j64V3q-VktFaU5v5Fk&sid=881bfd1a4113c1f2&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Playit
+vless://6e8e0631-5255-4946-8765-ac9f9c7b19d1@laurel-city.tun.ply.gg:39442?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=4Yr_UOJM8kvS5EAqWe_yNquh1X0FW3YZUnmJyNzhqFY&sid=21f44b03c8a30183&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Playit

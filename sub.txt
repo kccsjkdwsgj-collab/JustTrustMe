@@ -1,1 +1,1 @@
-vless://3f4fcc65-7716-430a-8570-26568626ae51@bore.pub:53628?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=Bctmsrswa2Flb1ebnS9-_5oHBvO9a7RGtXAIpJj4rj8&sid=9b5091e78c68d154&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Bore
+vless://888ccc33-e7ac-4871-ba5e-4638ab0c7dd1@bore.pub:62797?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=W-zPOc0L-ws9mJ8pFEa-MRlPaYY1xbq7bwDP7bCNaVc&sid=ef2ad70be8968b97&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Bore

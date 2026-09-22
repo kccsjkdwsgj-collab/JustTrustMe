@@ -1,4 +1,4 @@
-name: Xray Reality with Serveo Tunnel
+name: Xray Reality with Bore Tunnel
 
 on:
   workflow_dispatch:
@@ -10,19 +10,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 1. تنزيل Xray (تم إضافة sudo)
+      # 1. تنزيل Xray
       - name: Install Xray
         run: |
           sudo bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
-      # 2. توليد المفاتيح و UUID تلقائياً
+      # 2. توليد المفاتيح و UUID (تم تصليح الطريقة)
       - name: Generate Keys and UUID
         id: keys
         run: |
           UUID=$(xray uuid)
-          KEYS=$(xray x25519)
-          PRIVATE_KEY=$(echo "$KEYS" | grep "Private key:" | awk '{print $3}')
-          PUBLIC_KEY=$(echo "$KEYS" | grep "Public key:" | awk '{print $3}')
+          xray x25519 > /tmp/keys.txt
+          PRIVATE_KEY=$(grep -i "private" /tmp/keys.txt | awk '{print $NF}')
+          PUBLIC_KEY=$(grep -i "public" /tmp/keys.txt | awk '{print $NF}')
           SHORT_ID=$(openssl rand -hex 8)
           
           echo "UUID=$UUID" >> $GITHUB_ENV
@@ -39,7 +39,7 @@ jobs:
           echo "Flow: xtls-rprx-vision"
           echo "=================================================="
 
-      # 3. وضع إعدادات Xray (استخدمنا sudo tee عشان الصلاحيات)
+      # 3. وضع إعدادات Xray
       - name: Setup Xray Config
         run: |
           sudo tee /usr/local/etc/xray/config.json > /dev/null << EOF
@@ -68,24 +68,28 @@ jobs:
           }
           EOF
 
-      # 4. تشغيل Xray في الخلفية (تم إضافة sudo)
+      # 4. تشغيل Xray
       - name: Start Xray
         run: |
           sudo nohup xray run -c /usr/local/etc/xray/config.json > /dev/null 2>&1 &
           sleep 3
 
-      # 5. تشغيل Serveo Tunnel واستخراج العنوان
-      - name: Start Serveo Tunnel
+      # 5. تنزيل وتشغيل Bore Tunnel
+      - name: Start Bore Tunnel
         run: |
-          ssh -o StrictHostKeyChecking=no -R 0:localhost:10000 serveo.net > serveo.log 2>&1 &
+          # تنزيل Bore
+          wget https://github.com/ekzhang/bore/releases/download/v0.5.1/bore-v0.5.1-x86_64-unknown-linux-musl.tar.gz
+          tar xzf bore-v0.5.1-x86_64-unknown-linux-musl.tar.gz
+          chmod +x bore
           
-          echo "⏳ جاري انتظار Serveo عشان يدينا عنوان..."
-          sleep 10
+          # تشغيل Bore في الخلفية
+          nohup ./bore local 10000 --to bore.pub > bore.log 2>&1 &
+          sleep 5
           
           echo "=================================================="
-          echo "📋 عنوان السيرفر بتاعك (Serveo Address):"
+          echo "📋 عنوان السيرفر بتاعك (Bore Address):"
           echo "=================================================="
-          cat serveo.log
+          cat bore.log
           echo "=================================================="
           echo "⚠️ خد العنوان والبورت اللي فوق وحطهم في Netmod"
           echo "=================================================="

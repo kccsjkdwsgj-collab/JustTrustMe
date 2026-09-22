@@ -85,7 +85,8 @@ jobs:
           PORT=$(grep -o 'bore.pub:[0-9]*' bore.log | cut -d: -f2)
           echo "PORT=$PORT" >> $GITHUB_ENV
           
-          VLESS_LINK="vless://${{ env.UUID }}@bore.pub:$PORT?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=${{ env.PUBLIC_KEY }}&sid=${{ env.SHORT_ID }}&flow=xtls-rprx-vision#GitHub-Action-Bore"
+          # تم إضافة &allowInsecure=1 جوه الرابط
+          VLESS_LINK="vless://${{ env.UUID }}@bore.pub:$PORT?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=${{ env.PUBLIC_KEY }}&sid=${{ env.SHORT_ID }}&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Bore"
           echo "VLESS_LINK=$VLESS_LINK" >> $GITHUB_ENV
           
           echo "=================================================="

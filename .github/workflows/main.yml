@@ -82,7 +82,7 @@ jobs:
           VLESS_LINK="vless://${{ env.UUID }}@bore.pub:$PORT?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=${{ env.PUBLIC_KEY }}&sid=${{ env.SHORT_ID }}&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Bore"
           echo "VLESS_LINK=$VLESS_LINK" >> $GITHUB_ENV
 
-      # الخطوة دي هي اللي هتولد رابط WARP بالصيغة اللي NekoBox بيفهمها
+      # الخطوة دي هي اللي هتظبط الـ WARP بالصيغة اللي NekoBox عايزها
       - name: Generate WARP Profile for NekoBox
         run: |
           wget https://github.com/ViRb3/wgcf/releases/download/v2.2.22/wgcf_2.2.22_linux_amd64 -O wgcf
@@ -91,7 +91,6 @@ jobs:
           ./wgcf generate
           
           WG_PRIVATE_KEY=$(grep "PrivateKey" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
-          # نأخذ الـ IPv4 بس عشان NekoBox
           WG_ADDRESS=$(grep "Address" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ' | cut -d ',' -f1)
           WG_PUBLIC_KEY=$(grep "PublicKey" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
           WG_ENDPOINT=$(grep "Endpoint" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
@@ -99,7 +98,7 @@ jobs:
           WG_HOST=$(echo $WG_ENDPOINT | cut -d: -f1)
           WG_PORT=$(echo $WG_ENDPOINT | cut -d: -f2)
           
-          # بناء الـ JSON المطلوب لـ sing-box (NekoBox)
+          # بناء الـ JSON
           JSON_CONFIG=$(jq -n \
             --arg pk "$WG_PRIVATE_KEY" \
             --arg pub "$WG_PUBLIC_KEY" \
@@ -108,14 +107,14 @@ jobs:
             --arg addr "$WG_ADDRESS" \
             '{type: "wireguard", tag: "proxy", server: $host, server_port: ($port|tonumber), local_address: [$addr], private_key: $pk, peer_public_key: $pub, mtu: 1280, reserved: [0,0,0]}')
             
-          BASE64_CONFIG=$(echo "$JSON_CONFIG" | base64 -w 0)
-          WARP_LINK="sn://wg?${BASE64_CONFIG}#Cloudflare-WARP"
+          # التعديل السحري: ضغط الـ JSON بـ zlib ثم تحويله لـ base64 عن طريق بايثون
+          BASE64_CONFIG=$(echo "$JSON_CONFIG" | python3 -c "import sys, zlib, base64; print(base64.b64encode(zlib.compress(sys.stdin.buffer.read())).decode())")
           
+          WARP_LINK="sn://wg?${BASE64_CONFIG}#Cloudflare-WARP"
           echo "WARP_LINK=$WARP_LINK" >> $GITHUB_ENV
 
       - name: Update Subscription File
         run: |
-          # كتابة الرابطين في ملف الاشتراك
           echo "${{ env.VLESS_LINK }}" > sub.txt
           echo "${{ env.WARP_LINK }}" >> sub.txt
           

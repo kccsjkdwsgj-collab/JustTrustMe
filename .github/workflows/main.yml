@@ -1,4 +1,4 @@
-name: Xray Reality with Bore Tunnel (Auto Subscription)
+name: Xray Reality with Bore Tunnel + WARP
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # مهم عشان نقدر نعمل push
+          fetch-depth: 0
 
       - name: Install Xray
         run: |
@@ -32,13 +32,6 @@ jobs:
           echo "PRIVATE_KEY=$PRIVATE_KEY" >> $GITHUB_ENV
           echo "PUBLIC_KEY=$PUBLIC_KEY" >> $GITHUB_ENV
           echo "SHORT_ID=$SHORT_ID" >> $GITHUB_ENV
-          
-          echo "=================================================="
-          echo "✅ تم توليد بيانات الاتصال بنجاح!"
-          echo "UUID: $UUID"
-          echo "Public Key: $PUBLIC_KEY"
-          echo "Short ID: $SHORT_ID"
-          echo "=================================================="
 
       - name: Setup Xray Config
         run: |
@@ -85,27 +78,42 @@ jobs:
           PORT=$(grep -o 'bore.pub:[0-9]*' bore.log | cut -d: -f2)
           echo "PORT=$PORT" >> $GITHUB_ENV
           
-          # تم إضافة &allowInsecure=1 جوه الرابط
           VLESS_LINK="vless://${{ env.UUID }}@bore.pub:$PORT?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=${{ env.PUBLIC_KEY }}&sid=${{ env.SHORT_ID }}&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Bore"
           echo "VLESS_LINK=$VLESS_LINK" >> $GITHUB_ENV
+
+      # الخطوة الجديدة: توليد بروفايل WARP
+      - name: Generate WARP Profile
+        run: |
+          wget https://github.com/ViRb3/wgcf/releases/download/v2.2.22/wgcf_2.2.22_linux_amd64 -O wgcf
+          chmod +x wgcf
+          ./wgcf register --accept-tos
+          ./wgcf generate
+          
+          # استخراج البيانات من ملف الإعدادات
+          WG_PRIVATE_KEY=$(grep "PrivateKey" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
+          WG_ADDRESS=$(grep "Address" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ' | head -n 1)
+          WG_PUBLIC_KEY=$(grep "PublicKey" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
+          WG_ENDPOINT=$(grep "Endpoint" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
+          
+          # تكوين رابط wireguard
+          WARP_LINK="wireguard://${WG_PRIVATE_KEY}@${WG_ENDPOINT}?publicKey=${WG_PUBLIC_KEY}&address=${WG_ADDRESS}#Cloudflare-WARP"
+          echo "WARP_LINK=$WARP_LINK" >> $GITHUB_ENV
           
           echo "=================================================="
-          echo "🔗 الرابط الجاهز: $VLESS_LINK"
+          echo "🔗 رابط WARP: $WARP_LINK"
           echo "=================================================="
 
-      # الخطوة دي هي اللي بتحدث ملف sub.txt وتعمله push للريبو
-      - name: Update and Push Subscription File
+      - name: Update Subscription File
         run: |
+          # كتابة الرابطين في ملف الاشتراك
           echo "${{ env.VLESS_LINK }}" > sub.txt
+          echo "${{ env.WARP_LINK }}" >> sub.txt
           
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
           
           git add sub.txt
-          # لو مفيش تغيير في الملف، الأمر هيكمل عادي
-          git commit -m "Auto-update subscription link" || exit 0
-          
-          # استخدام التوكن عشان نعمل push
+          git commit -m "Auto-update subscription with WARP" || exit 0
           git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git HEAD:master
 
       - name: Keep Alive

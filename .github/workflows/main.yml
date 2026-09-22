@@ -1,4 +1,4 @@
-name: Xray Reality with Bore Tunnel + WARP
+name: Xray Reality with Bore Tunnel + WARP (NekoBox Format)
 
 on:
   workflow_dispatch:
@@ -15,9 +15,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Xray
+      - name: Install Xray and jq
         run: |
           sudo bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+          sudo apt-get install -y jq
 
       - name: Generate Keys and UUID
         id: keys
@@ -81,27 +82,36 @@ jobs:
           VLESS_LINK="vless://${{ env.UUID }}@bore.pub:$PORT?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=${{ env.PUBLIC_KEY }}&sid=${{ env.SHORT_ID }}&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Bore"
           echo "VLESS_LINK=$VLESS_LINK" >> $GITHUB_ENV
 
-      # الخطوة الجديدة: توليد بروفايل WARP
-      - name: Generate WARP Profile
+      # الخطوة دي هي اللي هتولد رابط WARP بالصيغة اللي NekoBox بيفهمها
+      - name: Generate WARP Profile for NekoBox
         run: |
           wget https://github.com/ViRb3/wgcf/releases/download/v2.2.22/wgcf_2.2.22_linux_amd64 -O wgcf
           chmod +x wgcf
           ./wgcf register --accept-tos
           ./wgcf generate
           
-          # استخراج البيانات من ملف الإعدادات
           WG_PRIVATE_KEY=$(grep "PrivateKey" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
-          WG_ADDRESS=$(grep "Address" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ' | head -n 1)
+          # نأخذ الـ IPv4 بس عشان NekoBox
+          WG_ADDRESS=$(grep "Address" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ' | cut -d ',' -f1)
           WG_PUBLIC_KEY=$(grep "PublicKey" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
           WG_ENDPOINT=$(grep "Endpoint" wgcf-profile.conf | cut -d '=' -f2 | tr -d ' ')
           
-          # تكوين رابط wireguard
-          WARP_LINK="wireguard://${WG_PRIVATE_KEY}@${WG_ENDPOINT}?publicKey=${WG_PUBLIC_KEY}&address=${WG_ADDRESS}#Cloudflare-WARP"
-          echo "WARP_LINK=$WARP_LINK" >> $GITHUB_ENV
+          WG_HOST=$(echo $WG_ENDPOINT | cut -d: -f1)
+          WG_PORT=$(echo $WG_ENDPOINT | cut -d: -f2)
           
-          echo "=================================================="
-          echo "🔗 رابط WARP: $WARP_LINK"
-          echo "=================================================="
+          # بناء الـ JSON المطلوب لـ sing-box (NekoBox)
+          JSON_CONFIG=$(jq -n \
+            --arg pk "$WG_PRIVATE_KEY" \
+            --arg pub "$WG_PUBLIC_KEY" \
+            --arg host "$WG_HOST" \
+            --arg port "$WG_PORT" \
+            --arg addr "$WG_ADDRESS" \
+            '{type: "wireguard", tag: "proxy", server: $host, server_port: ($port|tonumber), local_address: [$addr], private_key: $pk, peer_public_key: $pub, mtu: 1280, reserved: [0,0,0]}')
+            
+          BASE64_CONFIG=$(echo "$JSON_CONFIG" | base64 -w 0)
+          WARP_LINK="sn://wg?${BASE64_CONFIG}#Cloudflare-WARP"
+          
+          echo "WARP_LINK=$WARP_LINK" >> $GITHUB_ENV
 
       - name: Update Subscription File
         run: |
@@ -113,7 +123,7 @@ jobs:
           git config --global user.email "actions@github.com"
           
           git add sub.txt
-          git commit -m "Auto-update subscription with WARP" || exit 0
+          git commit -m "Auto-update subscription with WARP (NekoBox format)" || exit 0
           git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git HEAD:master
 
       - name: Keep Alive

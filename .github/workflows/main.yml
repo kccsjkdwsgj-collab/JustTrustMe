@@ -75,15 +75,17 @@ jobs:
 
       - name: Start Playit Tunnel
         run: |
-          # تحميل برنامج playit لنسخة اللينكس (سيرفرات جيت هاب)
           wget -q https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64 -O playit
           chmod +x playit
           
-          # تشغيل النفق باستخدام الـ Secret Key المحفوظ في GitHub Secrets
+          echo "Starting Playit with secret..."
           nohup ./playit --secret ${{ secrets.PLAYIT_SECRET }} > playit.log 2>&1 &
-          sleep 5
           
-          # بناء رابط VLESS بالعنوان الثابت اللي أخدناه من حسابك
+          sleep 5
+          echo "=== Playit Logs ==="
+          cat playit.log
+          echo "==================="
+          
           VLESS_LINK="vless://${{ env.UUID }}@laurel-city.tun.ply.gg:39442?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=${{ env.PUBLIC_KEY }}&sid=${{ env.SHORT_ID }}&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Playit"
           echo "VLESS_LINK=$VLESS_LINK" >> $GITHUB_ENV
           

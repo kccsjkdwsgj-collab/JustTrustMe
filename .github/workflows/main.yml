@@ -15,7 +15,7 @@ jobs:
         run: |
           sudo bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 
-      # 2. توليد المفاتيح و UUID (تم تصليح الطريقة)
+      # 2. توليد المفاتيح و UUID
       - name: Generate Keys and UUID
         id: keys
         run: |
@@ -74,27 +74,38 @@ jobs:
           sudo nohup xray run -c /usr/local/etc/xray/config.json > /dev/null 2>&1 &
           sleep 3
 
-      # 5. تنزيل وتشغيل Bore Tunnel
+      # 5. تشغيل Bore Tunnel واستخراج العنوان
       - name: Start Bore Tunnel
         run: |
-          # تنزيل Bore
           wget https://github.com/ekzhang/bore/releases/download/v0.5.1/bore-v0.5.1-x86_64-unknown-linux-musl.tar.gz
           tar xzf bore-v0.5.1-x86_64-unknown-linux-musl.tar.gz
           chmod +x bore
           
-          # تشغيل Bore في الخلفية
           nohup ./bore local 10000 --to bore.pub > bore.log 2>&1 &
           sleep 5
+          
+          # استخراج البورت من اللوج
+          PORT=$(grep -o 'bore.pub:[0-9]*' bore.log | cut -d: -f2)
+          echo "PORT=$PORT" >> $GITHUB_ENV
           
           echo "=================================================="
           echo "📋 عنوان السيرفر بتاعك (Bore Address):"
           echo "=================================================="
           cat bore.log
           echo "=================================================="
-          echo "⚠️ خد العنوان والبورت اللي فوق وحطهم في Netmod"
+
+      # 6. طباعة الرابط الجاهز للنسخ
+      - name: Print Ready-to-Use Link
+        run: |
+          VLESS_LINK="vless://${{ env.UUID }}@bore.pub:${{ env.PORT }}?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=${{ env.PUBLIC_KEY }}&sid=${{ env.SHORT_ID }}&flow=xtls-rprx-vision#GitHub-Action-Bore"
+          echo "=================================================="
+          echo "🔗 الرابط الجاهز (انسخه واعمله Import في NekoBox):"
+          echo "$VLESS_LINK"
+          echo "=================================================="
+          echo "⚠️ لو الرابط ده مشتغلش، جرب تغير كلمة ea.com في الرابط لـ www.apple.com"
           echo "=================================================="
 
-      # 6. إبقاء الـ Action شغال
+      # 7. إبقاء الـ Action شغال
       - name: Keep Alive
         run: |
           while true; do sleep 3600; done

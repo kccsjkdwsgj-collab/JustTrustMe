@@ -49,7 +49,8 @@ jobs:
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           fi
-          pip install blackboxprotobuf
+          pip install blackboxprotobuf --no-deps
+          pip install --upgrade "protobuf>=5.26.0"
 
       - name: Run Master Key Bot
         run: |

@@ -48,10 +48,8 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
-          else
-            echo "⚠️ requirements.txt غير موجود، جاري تثبيت الحزم الأساسية..."
-            pip install pyrogram TgCrypto firebase-admin python-dotenv httpx pycryptodome protobuf requests PyJWT aiohttp psutil pytz pymongo motor dnspython
           fi
+          pip install blackboxprotobuf
 
       - name: Run Master Key Bot
         run: |

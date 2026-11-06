@@ -1,118 +1,55 @@
-name: Xray Reality with Playit Tunnel (Auto Subscription)
+name: Run FF Master Key Bot
 
 on:
+  push:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 */5 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: write
+concurrency:
+  group: ff-bot-runner
+  cancel-in-progress: true
 
 jobs:
-  run-server:
+  run-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 360
+
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          fetch-depth: 0
+          python-version: '3.10'
 
-      - name: Install Xray
+      - name: Install System Utilities (7z & curl)
         run: |
-          sudo bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+          sudo apt-get update -y
+          sudo apt-get install -y p7zip-full curl
 
-      - name: Setup Fixed Keys and UUID
-        id: keys
+      - name: Download & Extract Bot Archive
+        env:
+          LIDEND_URL: ${{ secrets.LIDEND_URL }}
+          SRT_UNLECKED: ${{ secrets.SRT_UNLECKED }}
         run: |
-          # تثبيت بيانات الاتصال عشان الرابط ميتغيرش أبداً
-          UUID="2e70aea8-8292-4339-aa9a-ebb3716318bc"
-          PRIVATE_KEY="OHoJ2WlgBFuJ57Yd4Mvl2_MZJ9BsqmFAY5sspjdOXms"
-          PUBLIC_KEY="f8gh145zSmOMJvGDy5R0G2P2p6o-QNChrbI5LH0-owU"
-          SHORT_ID="3aefcec3cb327c3a"
+          echo "⬇️ جاري تحميل الملف المضغوط..."
+          curl -L -f -s -S "$LIDEND_URL" -o bot_archive.7z
           
-          echo "UUID=$UUID" >> $GITHUB_ENV
-          echo "PRIVATE_KEY=$PRIVATE_KEY" >> $GITHUB_ENV
-          echo "PUBLIC_KEY=$PUBLIC_KEY" >> $GITHUB_ENV
-          echo "SHORT_ID=$SHORT_ID" >> $GITHUB_ENV
+          echo "🔓 جاري فك ضغط الملف بكلمة السر..."
+          7z x bot_archive.7z -p"$SRT_UNLECKED" -y
           
-          echo "=================================================="
-          echo "✅ تم تثبيت بيانات الاتصال بنجاح!"
-          echo "UUID: $UUID"
-          echo "Public Key: $PUBLIC_KEY"
-          echo "Short ID: $SHORT_ID"
-          echo "=================================================="
+          rm -f bot_archive.7z
+          touch bbpb.py
+          sed -i '/blackboxprotobuf/d' requirements.txt 2>/dev/null || true
 
-      - name: Setup Xray Config
+      - name: Install Dependencies
         run: |
-          sudo tee /usr/local/etc/xray/config.json > /dev/null << EOF
-          {
-            "inbounds": [{
-              "port": 10000,
-              "protocol": "vless",
-              "settings": {
-                "clients": [{"id": "${{ env.UUID }}", "flow": "xtls-rprx-vision"}],
-                "decryption": "none"
-              },
-              "streamSettings": {
-                "network": "tcp",
-                "security": "reality",
-                "realitySettings": {
-                  "show": false,
-                  "dest": "ea.com:443",
-                  "xver": 0,
-                  "serverNames": ["ea.com"],
-                  "privateKey": "${{ env.PRIVATE_KEY }}",
-                  "shortIds": ["${{ env.SHORT_ID }}"]
-                }
-              }
-            }],
-            "outbounds": [{"protocol": "freedom"}]
-          }
-          EOF
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Start Xray
+      - name: Run Master Key Bot
         run: |
-          sudo nohup xray run -c /usr/local/etc/xray/config.json > /dev/null 2>&1 &
-          sleep 3
-
-      - name: Start Playit Tunnel
-        run: |
-          wget -q https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64 -O playit
-          chmod +x playit
-          
-          if [ -z "${{ secrets.PLAYIT_SECRET }}" ]; then
-            echo "ERROR: PLAYIT_SECRET is empty! Please add it to GitHub Secrets."
-            exit 1
-          fi
-          
-          mkdir -p ~/.config/playit_gg
-          echo 'secret_key = "${{ secrets.PLAYIT_SECRET }}"' > ~/.config/playit_gg/playit.toml
-          
-          echo "Starting Playit..."
-          sudo nohup ./playit --secret "${{ secrets.PLAYIT_SECRET }}" --socket-path /tmp/playit.sock > playit.log 2>&1 &
-          
-          sleep 5
-          echo "=== Playit Logs ==="
-          cat playit.log
-          echo "==================="
-          
-          VLESS_LINK="vless://${{ env.UUID }}@laurel-city.tun.ply.gg:39442?type=tcp&security=reality&sni=ea.com&fp=chrome&pbk=${{ env.PUBLIC_KEY }}&sid=${{ env.SHORT_ID }}&flow=xtls-rprx-vision&allowInsecure=1#GitHub-Action-Playit"
-          echo "VLESS_LINK=$VLESS_LINK" >> $GITHUB_ENV
-          
-          echo "=================================================="
-          echo "🔗 الرابط الجاهز: $VLESS_LINK"
-          echo "=================================================="
-
-      - name: Update and Push Subscription File
-        run: |
-          echo "${{ env.VLESS_LINK }}" > sub.txt
-          
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions@github.com"
-          
-          git add sub.txt
-          git commit -m "Auto-update subscription link (Playit)" || exit 0
-          
-          git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git HEAD:master
-
-      - name: Keep Alive
-        run: |
-          while true; do sleep 3600; done
+          python master_key_bot_ui.py

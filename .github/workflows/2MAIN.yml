@@ -4,9 +4,9 @@ on:
   push:
     branches: [ main, master ]
   schedule:
-  
     - cron: '0 */5 * * *'
-  workflow_dispatch: 
+  workflow_dispatch:
+
 concurrency:
   group: ff-bot-runner
   cancel-in-progress: true
@@ -14,7 +14,7 @@ concurrency:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 360 
+    timeout-minutes: 360
 
     steps:
       - name: Checkout Repository
@@ -32,8 +32,8 @@ jobs:
 
       - name: Download & Extract Bot Archive
         env:
-          ARCHIVE_URL: ${{ secrets.ARCHIVE_URL || secrets.BOT_URL || secrets.URL }}
-          ARCHIVE_PASSWORD: ${{ secrets.ARCHIVE_PASSWORD || secrets.BOT_PASSWORD || secrets.PASSWORD }}
+          LIDEND_URL: ${{ secrets.LIDEND_URL }}
+          SRT_UNLECKED: ${{ secrets.SRT_UNLECKED }}
         run: |
           echo "⬇️ جاري تحميل الملف المضغوط..."
           curl -L -f -s -S "$LIDEND_URL" -o bot_archive.7z
@@ -41,7 +41,6 @@ jobs:
           echo "🔓 جاري فك ضغط الملف بكلمة السر..."
           7z x bot_archive.7z -p"$SRT_UNLECKED" -y
           
-          # حذف الملف المضغوط بعد فكه لتوفير المساحة
           rm -f bot_archive.7z
 
       - name: Install Dependencies
@@ -57,4 +56,3 @@ jobs:
       - name: Run Master Key Bot
         run: |
           python master_key_bot_ui.py
-
